@@ -190,7 +190,7 @@ void setup()
   // Ask for firmware version
   GPSSerial.println(PMTK_Q_RELEASE);
   portal.onDetect(atDetect);
-
+ //Andy
   if (portal.begin()) {
     setupHttpServer();
     Server.on("/getData", getDataHandler);
