@@ -9,7 +9,7 @@
                 width: 100%;
             }
         </style>
-        <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+        <script type="text/javascript" src="jquery-3.5.0.min.js"></script>
         <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBP-sX_MQ4FVCbm2v478-vEcubrio73lS4"></script>
         <script>
             var refreshRate = 10000;
@@ -41,7 +41,7 @@
             ;function updateMap() {
                 console.log("Getting Position");
                 $.ajax({
-                    url: "/getData",
+                    url: "/getCurrentPosition",
                     dataType: "json",
                     data: null
                 }).then(function(data) {

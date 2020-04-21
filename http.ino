@@ -1,8 +1,6 @@
 void handleMenuHtml(void){
    Server.send(200, "text/html", AUTOCONNECT_LINK(BAR_32)); 
 }
- 
-
 
 void setupHttpServer(){
   //SERVER INIT
@@ -25,6 +23,8 @@ void setupHttpServer(){
   Server.on("/edit", HTTP_POST, []() {
     Server.send(200, "text/plain", "");
   }, handleFileUpload);
+
+ 
   
   //called when the url is not defined here
   //use it to load content from FILESYSTEM

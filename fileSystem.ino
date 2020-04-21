@@ -192,10 +192,5 @@ void setupFileSystem(){
       file = root.openNextFile();
   }
   Serial.printf("\n");
- }
-
-  
-  
-  
-
+ 
 }
