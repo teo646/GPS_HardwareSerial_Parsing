@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+  <title>GPS Monitor</title>
+        <style>
+            #map {
+                height: 700px;
+                width: 100%;
+            }
+        </style>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBP-sX_MQ4FVCbm2v478-vEcubrio73lS4"></script>
+        <script>
+            var refreshRate = 10000;
+            var map = null;
+            var marker = null;
+            var infoWindow = null;
+            var position = {
+                lat: 42.000000,
+                lng: -85.000000
+            };
+            var mapCenter = {
+                lat: 42.000000,
+                lng: -85.000000
+            };
+            function initMap() {
+                map = new google.maps.Map(document.getElementById('map'),{
+                    zoom: 4,
+                    center: mapCenter
+                });
+                infoWindow = new google.maps.InfoWindow;
+                infoWindow.setPosition(position);
+                infoWindow.setContent('Location found.');
+                infoWindow.open(map);
+                marker = new google.maps.Marker({
+                    position: position,
+                    map: map
+                });
+            }
+            ;function updateMap() {
+                console.log("Getting Position");
+                $.ajax({
+                    url: "/getData",
+                    dataType: "json",
+                    data: null
+                }).then(function(data) {
+                    if (data.valid) {
+                        console.log("Got Position", data);
+                        $.extend(position, data);
+                        $.extend(mapCenter, data);
+                        map.setCenter(mapCenter);
+                        map.setZoom(17);
+                    } else {
+                        console.log("No Gps Fix", data);
+                    }
+                    ;setTimeout(updateMap, refreshRate);
+                }, function(jqXHR, textStatus, errorThrown) {
+                    console.log("Error Getting Position", textStatus, errorThrown);
+                    setTimeout(updateMap, refreshRate);
+                });
+            }
+	    var getMenu = function(){
+		$( "div.menu" ).load( "/autoconnectMenu" );
+            }
+            $(document).ready(function() {
+		getMenu();
+                initMap();
+                updateMap();
+            });
+        </script>
+    </head>
+    <body>
+	<div class="menu"></div>
+        <h3>Teo Google Maps Demo</h3>
+        <div id="map"></div>
+    </body>
+</html>
