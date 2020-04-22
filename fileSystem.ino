@@ -46,6 +46,8 @@ String getContentType(String filename) {
     return "image/jpeg";
   } else if (filename.endsWith(".ico")) {
     return "image/x-icon";
+  } else if (filename.endsWith(".json")) {
+    return "application/json";
   } else if (filename.endsWith(".xml")) {
     return "text/xml";
   } else if (filename.endsWith(".pdf")) {
@@ -58,9 +60,9 @@ String getContentType(String filename) {
   return "text/plain";
 }
 
-bool exists(String path){
+bool exists(fs::FS &fs, String path){
   bool yes = false;
-  File file = FILESYSTEM.open(path, "r");
+  File file = fs.open(path, "r");
   if(!file.isDirectory()){
     yes = true;
   }
@@ -69,17 +71,29 @@ bool exists(String path){
 }
 
 bool handleFileRead(String path) {
+   if (path.startsWith("/sd/")==true){
+    return handleFileReadFS(SD, path);
+   }else{
+    return handleFileReadFS(FILESYSTEM, path);
+   }  
+}
+
+bool handleFileReadSD(String path) {
+    return handleFileReadFS(SD, path);
+}
+
+bool handleFileReadFS(fs::FS &fs, String path) {
   Serial.println("handleFileRead: " + path);
   if (path.endsWith("/")) {
     path += "index.htm";
   }
   String contentType = getContentType(path);
   String pathWithGz = path + ".gz";
-  if (exists(pathWithGz) || exists(path)) {
-    if (exists(pathWithGz)) {
+  if (exists(fs, pathWithGz) || exists(fs, path)) {
+    if (exists(fs, pathWithGz)) {
       path += ".gz";
     }
-    File file = FILESYSTEM.open(path, "r");
+    File file = fs.open(path, "r");
     Server.streamFile(file, contentType);
     file.close();
     return true;
@@ -88,9 +102,18 @@ bool handleFileRead(String path) {
 }
 
 void handleFileUpload() {
+    handleFileUploadFS(FILESYSTEM);
+}
+void handleFileUploadSD() {
+    handleFileUploadFS(SD);
+}
+
+void handleFileUploadFS(fs::FS &fs) {
+
   if (Server.uri() != "/edit") {
     return;
   }
+  
   HTTPUpload& upload = Server.upload();
   if (upload.status == UPLOAD_FILE_START) {
     String filename = upload.filename;
@@ -98,7 +121,7 @@ void handleFileUpload() {
       filename = "/" + filename;
     }
     Serial.print("handleFileUpload Name: "); Serial.println(filename);
-    fsUploadFile = FILESYSTEM.open(filename, "w");
+    fsUploadFile = fs.open(filename, "w");
     filename = String();
   } else if (upload.status == UPLOAD_FILE_WRITE) {
     //Serial.print("handleFileUpload Data: "); Serial.println(upload.currentSize);
@@ -114,6 +137,15 @@ void handleFileUpload() {
 }
 
 void handleFileDelete() {
+    handleFileDeleteFS(FILESYSTEM);
+}
+
+void handleFileDeleteSD() {
+    handleFileDeleteFS(SD);
+}
+
+void handleFileDeleteFS(fs::FS &fs) {
+
   if (Server.args() == 0) {
     return Server.send(500, "text/plain", "BAD ARGS");
   }
@@ -122,15 +154,24 @@ void handleFileDelete() {
   if (path == "/") {
     return Server.send(500, "text/plain", "BAD PATH");
   }
-  if (!exists(path)) {
+  if (!exists(fs, path)) {
     return Server.send(404, "text/plain", "FileNotFound");
   }
-  FILESYSTEM.remove(path);
+  fs.remove(path);
   Server.send(200, "text/plain", "");
   path = String();
 }
 
 void handleFileCreate() {
+    handleFileCreateFS(FILESYSTEM);
+}
+
+void handleFileCreateSD() {
+    handleFileCreateFS(SD);
+}
+
+void handleFileCreateFS(fs::FS &fs) {
+
   if (Server.args() == 0) {
     return Server.send(500, "text/plain", "BAD ARGS");
   }
@@ -139,10 +180,10 @@ void handleFileCreate() {
   if (path == "/") {
     return Server.send(500, "text/plain", "BAD PATH");
   }
-  if (exists(path)) {
+  if (exists(fs, path)) {
     return Server.send(500, "text/plain", "FILE EXISTS");
   }
-  File file = FILESYSTEM.open(path, "w");
+  File file = fs.open(path, "w");
   if (file) {
     file.close();
   } else {
@@ -153,6 +194,15 @@ void handleFileCreate() {
 }
 
 void handleFileList() {
+    handleFileListFS(FILESYSTEM);
+}
+
+void handleFileListSD() {
+    handleFileListFS(SD);
+}
+
+void handleFileListFS(fs::FS &fs) {
+  
   if (!Server.hasArg("dir")) {
     Server.send(500, "text/plain", "BAD ARGS");
     return;
@@ -162,7 +212,7 @@ void handleFileList() {
   Serial.println("handleFileList: " + path);
 
 
-  File root = FILESYSTEM.open(path);
+  File root = fs.open(path);
   path = String();
 
   String output = "[";
@@ -172,7 +222,7 @@ void handleFileList() {
           if (output != "[") {
             output += ',';
           }
-          output += "{\"type\":\"";
+          output += "{\"dev\":\"spiffs\", \"type\":\"";
           output += (file.isDirectory()) ? "dir" : "file";
           output += "\",\"name\":\"";
           output += String(file.name()).substring(1);
@@ -180,9 +230,13 @@ void handleFileList() {
           file = root.openNextFile();
       }
   }
+
+  
   output += "]";
   Server.send(200, "text/json", output);
 }
+
+
 
 void listSDDir(fs::FS &fs, String dirname, uint8_t levels){
     Serial.println("Listing directory: " + dirname);
@@ -343,8 +397,9 @@ void setupFileSystem(){
   }
 
   if(useSDCard){
-      if(!SD.begin()){
-        Serial.println("Card Mount Failed");
+    Serial.println("Checing for SD Card");
+      if(SD.begin()){
+        Serial.println("SD Card Adapter Found");
         sdCardType = SD.cardType();
         if(sdCardType == CARD_NONE){
             Serial.println("No SD card attached");
@@ -365,6 +420,8 @@ void setupFileSystem(){
           Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
           listSDDir(SD, "/", 0);
         }
+      }else{
+        Serial.println("SD Card Adapter Not Found");
       }
   }
   

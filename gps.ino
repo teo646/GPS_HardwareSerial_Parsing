@@ -59,6 +59,12 @@ void appendLineToFile(){
 void gpsSetup() {
   // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
   GPS.begin(9600);
+  delay(100);
+  //PMTK_SET_BAUD_115200
+  GPS.sendCommand(PMTK_SET_BAUD_115200);
+  delay(100);
+  GPS.begin(115200);
+  delay(100);
   // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   // uncomment this line to turn on only the "minimum recommended" data
@@ -66,7 +72,8 @@ void gpsSetup() {
   // For parsing data, we don't suggest using anything but either RMC only or RMC+GGA since
   // the parser doesn't care about other sentences at this time
   // Set the update rate
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_200_MILLIHERTZ); // 200 miliHz update rate
+  GPS.sendCommand(PMTK_API_SET_FIX_CTL_200_MILLIHERTZ);
   // For the parsing code to work nicely and have time to sort thru the data, and
   // print it out we don't suggest using anything higher than 1 Hz
 
@@ -82,16 +89,72 @@ void gpsHttpSetup() {
    Server.on("/getCurrentPosition", gpsGetCurrentPosition);
 }
 
+
+
+String gpsGetGpsTimeStampFileName(){
+  String Year = "20" + String(GPS.year);
+  String Month = String(GPS.month);
+  if (Month.length() == 1){
+    Month = "0" + Month;      
+  }
+  String Day = String(GPS.day);
+  if (Day.length() == 1){
+    Day = "0" + Day;      
+  }
+  String Hours = String(GPS.hour);
+  if (Hours.length() == 1){
+    Hours = "0" + Hours;      
+  }
+  String Minutes = String(GPS.minute);
+  if (Minutes.length() == 1){
+    Minutes = "0" + Minutes;      
+  }
+  String Seconds = String(GPS.seconds);
+  if (Seconds.length() == 1){
+    Seconds = "0" + Seconds;      
+  }
+  
+  return Year + Month + Day + "_" + Hours + Minutes + Seconds; 
+}
+
+ 
+String gpsGetGpsJsonTimeStamp(){
+  String Year = "20" + String(GPS.year);
+  String Month = String(GPS.month);
+  if (Month.length() == 1){
+    Month = "0" + Month;      
+  }
+  String Day = String(GPS.day);
+  if (Day.length() == 1){
+    Day = "0" + Day;      
+  }
+  String Hours = String(GPS.hour);
+  if (Hours.length() == 1){
+    Hours = "0" + Hours;      
+  }
+  String Minutes = String(GPS.minute);
+  if (Minutes.length() == 1){
+    Minutes = "0" + Minutes;      
+  }
+  String Seconds = String(GPS.seconds);
+  if (Seconds.length() == 1){
+    Seconds = "0" + Seconds;      
+  }
+  //"2012-04-23T18:25:43.511Z"
+  float millisSec = float(GPS.milliseconds) / 1000.000;
+  String millisSec = String(millisSec,3);
+  millisSec = millisSec.substring(1);
+  return Year + "-" + Month + "-" + Day + "T" + Hours + ":" + Minutes + ":" + Seconds  +  millisSec + "Z"; 
+}
+
 String gpsGetCurrentPositionJson(){
   if(GPS.fix){
-    return "{\"valid\":true, \"lat\": "  + String(GPS.latitudeDegrees, 6) + ", \"lon\": "  + String(GPS.longitudeDegrees, 6) + ", \"day\": " + String(GPS.day) + ", \"hour\": " + String(GPS.hour) + ", \"minute\": " + String(GPS.minute) + ", \"ang\": " + String(GPS.angle, 6) + "}";
+    return "{\"valid\":true, \"lat\":"  + String(GPS.latitudeDegrees, 6) + ", \"lng\":"  + String(GPS.longitudeDegrees, 6) + ", \"date\":\"" + gpsGetGpsJsonTimeStamp() + "\", \"ang\": " + String(GPS.angle, 6) + "}";
   }else{
-    return "{\"valid\":false, \"lat\": "  + String(GPS.latitudeDegrees, 6) + ", \"lon\": "  + String(GPS.longitudeDegrees, 6) + ", \"day\": " + String(GPS.day) + ", \"hour\": " + String(GPS.hour) + ", \"minute\": " + String(GPS.minute) + ", \"ang\": " + String(GPS.angle, 6) + "}";
+    return "{\"valid\":false, \"lat\":"  + String(GPS.latitudeDegrees, 6) + ", \"lng\":"  + String(GPS.longitudeDegrees, 6) + ", \"date\":\"" + gpsGetGpsJsonTimeStamp() + "\", \"ang\": " + String(GPS.angle, 6) + "}";
  
   }
 }
-
-
 
 void gpsLoop(){
   // read data from the GPS in the 'main loop'
@@ -117,7 +180,7 @@ void gpsLoop(){
     gpsTimer = millis();  // reset the gpsTimer
    //if (  distanceInKmBetweenEarthCoordinates(last_latitude, last_longitude, (GPS.latitudeDegrees, 6), (GPS.longitudeDegrees, 6))>0.01){ // make sure that the function is working   
      if(GPS.fix && gpsFileName == ""){
-        gpsFileName = String(GPS.year) + String(GPS.month) + String(GPS.day) + "_" + String(GPS.hour) + "_" + String(GPS.minute) + "_" + String(GPS.seconds) + ".txt"; 
+        String gpsFileName =  gpsGetGpsTimeStampFileName()  + ".json"; 
         String positionJson = gpsGetCurrentPositionJson();
         char* jsonBuffer = 0;
         jsonBuffer =  (char*) malloc(positionJson.length());

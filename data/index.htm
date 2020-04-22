@@ -9,7 +9,7 @@
                 width: 100%;
             }
         </style>
-        <script type="text/javascript" src="jquery-3.5.0.min.js"></script>
+        <script type="text/javascript" src="/jquery-3.5.0.min.js"></script>
         <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBP-sX_MQ4FVCbm2v478-vEcubrio73lS4"></script>
         <script>
             var refreshRate = 10000;
@@ -24,21 +24,27 @@
                 lat: 42.000000,
                 lng: -85.000000
             };
+			
+			var trackPathCoordinates = [];
+			
+			var trackPath = null;
             function initMap() {
                 map = new google.maps.Map(document.getElementById('map'),{
                     zoom: 4,
                     center: mapCenter
                 });
-                infoWindow = new google.maps.InfoWindow;
-                infoWindow.setPosition(position);
-                infoWindow.setContent('Location found.');
-                infoWindow.open(map);
-                marker = new google.maps.Marker({
-                    position: position,
-                    map: map
-                });
-            }
-            ;function updateMap() {
+                
+                
+				trackPath = new google.maps.Polyline({
+				    path: trackPathCoordinates,
+				    geodesic: true,
+				    strokeColor: '#FF0000',
+				    strokeOpacity: 1.0,
+				    strokeWeight: 2
+				  });
+			   trackPath.setMap(map);
+            };
+			function centerMapCurrentPosition() {
                 console.log("Getting Position");
                 $.ajax({
                     url: "/getCurrentPosition",
@@ -46,33 +52,66 @@
                     data: null
                 }).then(function(data) {
                     if (data.valid) {
+					
+					    
                         console.log("Got Position", data);
-                        $.extend(position, data);
-                        $.extend(mapCenter, data);
+                        position.lat = data.lat;
+						position.lng = data.lng;
+						
+                        mapCenter.lat =  data.lat;
+						mapCenter.lng =  data.lng;
                         map.setCenter(mapCenter);
                         map.setZoom(17);
+						if(marker === null){
+							marker = new google.maps.Marker({
+			                    position: position,
+			                    map: map
+			                });
+						};
+						marker.setPosition(position);
+						if(infoWindow === null){
+							infoWindow = new google.maps.InfoWindow;
+			                infoWindow.setPosition(position);
+			                infoWindow.setContent('Location found.');
+			                infoWindow.open(map);
+						}
+						infoWindow.setPosition(position);
+						
                     } else {
                         console.log("No Gps Fix", data);
-                    }
-                    ;setTimeout(updateMap, refreshRate);
+                    };
+                    //setTimeout(updateMap, refreshRate);
                 }, function(jqXHR, textStatus, errorThrown) {
                     console.log("Error Getting Position", textStatus, errorThrown);
-                    setTimeout(updateMap, refreshRate);
+                    //setTimeout(updateMap, refreshRate);
                 });
             }
 	    var getMenu = function(){
 		$( "div.menu" ).load( "/autoconnectMenu" );
             }
             $(document).ready(function() {
-		getMenu();
+				$(".btnCurrentPosition").on("click", centerMapCurrentPosition);
+				getMenu();
                 initMap();
-                updateMap();
+                centerMapCurrentPosition();
             });
         </script>
     </head>
     <body>
-	<div class="menu"></div>
-        <h3>Teo Google Maps Demo</h3>
-        <div id="map"></div>
+	
+        <div style="width:100%">
+		    <div style="display:inline-block"><h3>Teo Google Maps Demo</h3></div>
+			<div style="display:inline-block"><button class="btnCurrentPosition">!</button></div>
+			<div style="display:inline-block; float:right"><div class="menu"></div></div>
+	    </div>
+		<div style="width:100%">
+			<table style="width:100%">
+				<tr>
+					<td style="width:100px"><div class="files"></div></td>
+					<td><div id="map"></div></td>
+				</tr>
+			</table>
+		</div>
+        
     </body>
 </html>

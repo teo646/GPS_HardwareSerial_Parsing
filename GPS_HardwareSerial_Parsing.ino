@@ -33,8 +33,6 @@ void setup()
   // also spit it out
   Serial.begin(115200);
   matrix.begin(0x70);
-
-  setupFileSystem();
   Config.boundaryOffset = 256;
   Config.autoReconnect = true;
   Config.ota=AC_OTA_BUILTIN;
@@ -46,9 +44,11 @@ void setup()
   Config.tickerOn = LOW;
   //Config.autoSave = AC_SAVECREDENTIAL_NEVER;
   portal.config(Config);
-  gpsSetup();
+  
   portal.onDetect(atDetect);
   if ( portal.begin() ) {
+    setupFileSystem();
+    gpsSetup();
     setupHttpServer();
     gpsHttpSetup();
     Serial.println("Started, IP:" + WiFi.localIP().toString());
