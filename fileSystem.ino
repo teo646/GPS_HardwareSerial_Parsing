@@ -1,14 +1,18 @@
 #define FILESYSTEM SPIFFS
 // You only need to format the filesystem once
 #define FORMAT_FILESYSTEM false
+#define useSDCard true
 #if FILESYSTEM == FFat
 #include <FFat.h>
 #endif
 #if FILESYSTEM == SPIFFS
 #include <SPIFFS.h>
 #endif
+#include "FS.h"
+#include "SD.h"
 
 File fsUploadFile;
+uint8_t sdCardType = CARD_NONE;
 
 //format bytes
 String formatBytes(size_t bytes) {
@@ -180,6 +184,152 @@ void handleFileList() {
   Server.send(200, "text/json", output);
 }
 
+void listSDDir(fs::FS &fs, String dirname, uint8_t levels){
+    Serial.println("Listing directory: " + dirname);
+    if(sdCardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+    File root = fs.open(dirname);
+    if(!root){
+        Serial.println("Failed to open directory");
+        return;
+    }
+    if(!root.isDirectory()){
+        Serial.println("Not a directory");
+        return;
+    }
+
+    File file = root.openNextFile();
+    while(file){
+        if(file.isDirectory()){
+            Serial.print("  DIR : ");
+            Serial.println(file.name());
+            if(levels){
+                listSDDir(fs, file.name(), levels -1);
+            }
+        } else {
+            Serial.print("  FILE: ");
+            Serial.print(file.name());
+            Serial.print("  SIZE: ");
+            Serial.println(file.size());
+        }
+        file = root.openNextFile();
+    }
+}
+
+void createSDDir(fs::FS &fs, String path){
+    Serial.println("Creating Dir: " + path);
+    if(sdCardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+    if(fs.mkdir(path)){
+        Serial.println("Dir created");
+    } else {
+        Serial.println("mkdir failed");
+    }
+}
+
+void removeSDDir(fs::FS &fs, String path){
+    Serial.println("Removing Dir: "  + path);
+    if(sdCardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+    if(fs.rmdir(path)){
+        Serial.println("Dir removed");
+    } else {
+        Serial.println("rmdir failed");
+    }
+}
+
+void readSDFile(fs::FS &fs, String path){
+    Serial.println("Reading file: " + path);
+    if(sdCardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+    File file = fs.open(path);
+    if(!file){
+        Serial.println("Failed to open file for reading");
+        return;
+    }
+
+    Serial.print("Read from file: ");
+    while(file.available()){
+        Serial.write(file.read());
+    }
+    file.close();
+}
+
+void writeSDFile(fs::FS &fs, String path, const char * message){
+    Serial.println("Writing file: " +  path);
+    if(sdCardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+    File file = fs.open(path, FILE_WRITE);
+    if(!file){
+        Serial.println("Failed to open file for writing");
+        return;
+    }
+    if(file.print(message)){
+        Serial.println("File written");
+    } else {
+        Serial.println("Write failed");
+    }
+    file.close();
+}
+
+void appendSDFile(fs::FS &fs, String path, const char * message){
+    Serial.println("Appending to SD file: " + path);
+    if(sdCardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+    File file = fs.open(path, FILE_APPEND);
+    if(!file){
+        Serial.println("Failed to open file for appending");
+        return;
+    }
+    if(file.print(message)){
+        Serial.println("Message appended");
+    } else {
+        Serial.println("Append failed");
+    }
+    file.close();
+}
+
+void renameSDFile(fs::FS &fs, String path1, String path2){
+    Serial.println("Renaming file " +  path1 + " to " + path2);
+    if(sdCardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+    if (fs.rename(path1, path2)) {
+        Serial.println("File renamed");
+    } else {
+        Serial.println("Rename failed");
+    }
+}
+
+void deleteSDFile(fs::FS &fs, String path){
+    Serial.println("Deleting file: " + path);
+    if(sdCardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+    if(fs.remove(path)){
+        Serial.println("File deleted");
+    } else {
+        Serial.println("Delete failed");
+    }
+}
+
+
+
+
 void setupFileSystem(){
   if (FORMAT_FILESYSTEM) FILESYSTEM.format();
   FILESYSTEM.begin();
@@ -188,9 +338,36 @@ void setupFileSystem(){
   while(file){
       String fileName = file.name();
       size_t fileSize = file.size();
-      Serial.printf("FS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
+      Serial.printf("SPIFFS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
       file = root.openNextFile();
   }
+
+  if(useSDCard){
+      if(!SD.begin()){
+        Serial.println("Card Mount Failed");
+        sdCardType = SD.cardType();
+        if(sdCardType == CARD_NONE){
+            Serial.println("No SD card attached");
+        }else{
+          Serial.print("SD Card Type: ");
+          if(sdCardType == CARD_MMC){
+              Serial.println("MMC");
+          } else if(sdCardType == CARD_SD){
+              Serial.println("SDSC");
+          } else if(sdCardType == CARD_SDHC){
+              Serial.println("SDHC");
+          } else {
+              Serial.println("UNKNOWN");
+          }
+          uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+          Serial.printf("SD Card Size: %lluMB\n", cardSize);
+          Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
+          Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
+          listSDDir(SD, "/", 0);
+        }
+      }
+  }
+  
   Serial.printf("\n");
  
 }

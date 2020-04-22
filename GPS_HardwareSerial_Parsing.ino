@@ -1,10 +1,8 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <AutoConnect.h>
-
 #include <SPI.h>
-#include "FS.h"
-#include "SD.h"
+
 #include <Adafruit_GFX.h>
 #include "Adafruit_LEDBackpack.h"
 
@@ -26,37 +24,7 @@ bool atDetect(IPAddress softapIP) {
   return true;
 }
 
-void writeFile(fs::FS &fs, String path, String Data){ //writeFile(SD, "/hello.txt", "Hello ");
-    Serial.printf("Writing file: %s\n", path);
 
-    File file = fs.open(path, FILE_WRITE);
-    if(!file){
-        Serial.println("Failed to open file for writing");
-        return;
-    }
-    if(file.println(Data)){
-        Serial.println("File written");
-    } else {
-        Serial.println("Write failed");
-    }
-    file.close();
-}
-
-void appendFile(fs::FS &fs, String path, String Data){
-    Serial.printf("Appending to file: %s\n", path);
-
-    File file = fs.open(path, FILE_APPEND);
-    if(!file){
-        Serial.println("Failed to open file for appending");
-        return;
-    }
-    if(file.print(",") && file.println(Data)){
-        Serial.println("Message appended");
-    } else {
-        Serial.println("Append failed");
-    }
-    file.close();
-}
 
 
 void setup()
@@ -65,15 +33,7 @@ void setup()
   // also spit it out
   Serial.begin(115200);
   matrix.begin(0x70);
-  if(!SD.begin()){
-    Serial.println("Card Mount Failed");
-    return;
-  }
-  uint8_t cardType = SD.cardType();
-  if(cardType == CARD_NONE){
-      Serial.println("No SD card attached");
-      return;
-  }
+
   setupFileSystem();
   Config.boundaryOffset = 256;
   Config.autoReconnect = true;

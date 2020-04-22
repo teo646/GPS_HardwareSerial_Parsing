@@ -91,6 +91,8 @@ String gpsGetCurrentPositionJson(){
   }
 }
 
+
+
 void gpsLoop(){
   // read data from the GPS in the 'main loop'
   char c = GPS.read();
@@ -102,7 +104,7 @@ void gpsLoop(){
     // a tricky thing here is if we print the NMEA sentence, or data
     // we end up not listening and catching other sentences!
     // so be very wary if using OUTPUT_ALLDATA and trying to print out data
-    String NmeaString = GPS.lastNMEA();    // this GPS.lastNMEA() sets the newNMEAreceived() flag to false
+    char* NmeaString = GPS.lastNMEA();    // this GPS.lastNMEA() sets the newNMEAreceived() flag to false
     GPS.parse(NmeaString); //return; // we can fail to parse a sentence in which case we should just wait for another
     if (GPSECHO){
       Serial.println(NmeaString); // this also sets the newNMEAreceived() flag to false
@@ -116,11 +118,21 @@ void gpsLoop(){
    //if (  distanceInKmBetweenEarthCoordinates(last_latitude, last_longitude, (GPS.latitudeDegrees, 6), (GPS.longitudeDegrees, 6))>0.01){ // make sure that the function is working   
      if(GPS.fix && gpsFileName == ""){
         gpsFileName = String(GPS.year) + String(GPS.month) + String(GPS.day) + "_" + String(GPS.hour) + "_" + String(GPS.minute) + "_" + String(GPS.seconds) + ".txt"; 
-        writeFile(SD,"/" + gpsFileName, gpsGetCurrentPositionJson());
+        String positionJson = gpsGetCurrentPositionJson();
+        char* jsonBuffer = 0;
+        jsonBuffer =  (char*) malloc(positionJson.length());
+        positionJson.toCharArray(jsonBuffer, sizeof(jsonBuffer));
+        writeSDFile(SD, "/" + gpsFileName, jsonBuffer);
+        free(jsonBuffer);
      }else if(GPS.fix){
-            appendFile(SD,"/" + gpsFileName, gpsGetCurrentPositionJson());
+        String positionJson = gpsGetCurrentPositionJson();
+        char* jsonBuffer = 0;
+        jsonBuffer =  (char*) malloc(positionJson.length());
+        positionJson.toCharArray(jsonBuffer, sizeof(jsonBuffer));
+        appendSDFile(SD, "/" + gpsFileName, jsonBuffer);
+        free(jsonBuffer);
      }else{
-            Serial.println("No GPS Fix!");
+        Serial.println("No GPS Fix!");
      }
   
   
