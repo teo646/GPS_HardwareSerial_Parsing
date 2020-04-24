@@ -33,6 +33,12 @@
                     zoom: 4,
                     center: mapCenter
                 });
+				if(infoWindow === null){
+							infoWindow = new google.maps.InfoWindow;
+			                infoWindow.setPosition(position);
+			                infoWindow.setContent('Hello! ');
+			                infoWindow.open(map);
+						}
                 
                 
 				trackPath = new google.maps.Polyline({
@@ -43,8 +49,10 @@
 				    strokeWeight: 2
 				  });
 			   trackPath.setMap(map);
+
             };
 			function centerMapCurrentPosition() {
+			    var path = trackPath.getPath();
                 console.log("Getting Position");
                 $.ajax({
                     url: "/getCurrentPosition",
@@ -57,6 +65,7 @@
                         console.log("Got Position", data);
                         position.lat = data.lat;
 						position.lng = data.lng;
+						path.push(position);
 						
                         mapCenter.lat =  data.lat;
 						mapCenter.lng =  data.lng;
@@ -72,7 +81,7 @@
 						if(infoWindow === null){
 							infoWindow = new google.maps.InfoWindow;
 			                infoWindow.setPosition(position);
-			                infoWindow.setContent('Location found.');
+			                infoWindow.setContent('New location found.');
 			                infoWindow.open(map);
 						}
 						infoWindow.setPosition(position);
