@@ -17,17 +17,16 @@
             var marker = null;
             var infoWindow = null;
             var position = {
-                lat: 42.000000,
-                lng: -85.000000
+                lat: 42.091560,
+                lng: -85.584000
             };
             var mapCenter = {
-                lat: 42.000000,
-                lng: -85.000000
+                lat: 42.091560,
+                lng: -85.584000
             };
 			
-			var trackPathCoordinates = [];
 			
-			var trackPath = null;
+			var trackPath;
             function initMap() {
                 map = new google.maps.Map(document.getElementById('map'),{
                     zoom: 4,
@@ -42,7 +41,6 @@
                 
                 
 				trackPath = new google.maps.Polyline({
-				    path: trackPathCoordinates,
 				    geodesic: true,
 				    strokeColor: '#FF0000',
 				    strokeOpacity: 1.0,
@@ -55,7 +53,7 @@
 			    var path = trackPath.getPath();
                 console.log("Getting Position");
                 $.ajax({
-                    url: "/getCurrentPosition",
+                    url: "/getGpsData",
                     dataType: "json",
                     data: null
                 }).then(function(data) {
@@ -67,10 +65,6 @@
 						position.lng = data.lng;
 						path.push(position);
 						
-                        mapCenter.lat =  data.lat;
-						mapCenter.lng =  data.lng;
-                        map.setCenter(mapCenter);
-                        map.setZoom(17);
 						if(marker === null){
 							marker = new google.maps.Marker({
 			                    position: position,
@@ -78,13 +72,13 @@
 			                });
 						};
 						marker.setPosition(position);
-						if(infoWindow === null){
+					/*	if(infoWindow === null){
 							infoWindow = new google.maps.InfoWindow;
 			                infoWindow.setPosition(position);
 			                infoWindow.setContent('New location found.');
 			                infoWindow.open(map);
 						}
-						infoWindow.setPosition(position);
+						infoWindow.setPosition(position);*/
 						
                     } else {
                         console.log("No Gps Fix", data);

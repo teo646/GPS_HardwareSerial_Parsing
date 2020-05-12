@@ -46,6 +46,8 @@ void setup()
   portal.config(Config);
   
   portal.onDetect(atDetect);
+
+  
   if ( portal.begin() ) {
     setupFileSystem();
     gpsSetup();

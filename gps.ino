@@ -18,13 +18,33 @@ float last_longitude = 0;
 String gpsFileName = "";
 
 void getGpsDataHandler(){
-    if(gpsFileName == ""){
-      Server.send(500, "application/json", "{\"error\":\"No GPS Fix Yet\"}");
-      return;
+  File root = SD.open("/");
+   if(!root){
+        Serial.println("Failed to open directory");
+        Server.send(500, "text/json", "{\"error\":\"No GPS Fix Yet\"}");
+        return;
     }
-    Serial.println("reading file " + gpsFileName);
-    File file = SD.open("/" + gpsFileName);
-    Server.send(200, "application/json", "{}");
+    if(!root.isDirectory()){
+        Serial.println("Not a directory");
+        Server.send(500, "text/json", "{\"error\":\"No GPS Fix Yet\"}");
+        return;
+    }
+
+    File file = root.openNextFile();
+    
+    Serial.println("reading data");
+    String Data;
+    while(file){
+     while(file.available()){
+       Data +=  char(file.read());
+}      SD.remove("/" + String(file.name()));
+       Data += ",";
+       file = root.openNextFile();
+}   Data = Data.substring(1, (Data.length() - 2));
+    Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
+    Server.send(200, "text/json", "[" + Data + "]");
+    Serial.println("[ " + Data + " ]");
+    gpsFileName= "";
 }
 
 void gpsGetCurrentPosition(){
@@ -90,35 +110,8 @@ void gpsHttpSetup() {
 }
 
 
-
-String gpsGetGpsTimeStampFileName(){
-  String Year = "20" + String(GPS.year);
-  String Month = String(GPS.month);
-  if (Month.length() == 1){
-    Month = "0" + Month;      
-  }
-  String Day = String(GPS.day);
-  if (Day.length() == 1){
-    Day = "0" + Day;      
-  }
-  String Hours = String(GPS.hour);
-  if (Hours.length() == 1){
-    Hours = "0" + Hours;      
-  }
-  String Minutes = String(GPS.minute);
-  if (Minutes.length() == 1){
-    Minutes = "0" + Minutes;      
-  }
-  String Seconds = String(GPS.seconds);
-  if (Seconds.length() == 1){
-    Seconds = "0" + Seconds;      
-  }
-  
-  return Year + Month + Day + "_" + Hours + Minutes + Seconds; 
-}
-
  
-String gpsGetGpsJsonTimeStamp(){
+String gpsGetGpsTimeStamp(String type){
   String Year = "20" + String(GPS.year);
   String Month = String(GPS.month);
   if (Month.length() == 1){
@@ -142,18 +135,22 @@ String gpsGetGpsJsonTimeStamp(){
   }
   //"2012-04-23T18:25:43.511Z"
   float millisSec = float(GPS.milliseconds) / 1000.000;
-  String millisSec = String(millisSec,3);
-  millisSec = millisSec.substring(1);
-  return Year + "-" + Month + "-" + Day + "T" + Hours + ":" + Minutes + ":" + Seconds  +  millisSec + "Z"; 
+  String millisSecond = String(millisSec,3);
+  millisSecond = millisSecond.substring(1);
+
+  if(type == "name"){
+    return Year + Month + Day + "_" + Hours + Minutes + Seconds; 
+    }else if(type == "json"){
+    return Year + "-" + Month + "-" + Day + "T" + Hours + ":" + Minutes + ":" + Seconds  +  millisSecond + "Z"; 
+  }else{
+    Serial.println("specify time stamp type");
+    return "";
+  }
 }
 
 String gpsGetCurrentPositionJson(){
-  if(GPS.fix){
-    return "{\"valid\":true, \"lat\":"  + String(GPS.latitudeDegrees, 6) + ", \"lng\":"  + String(GPS.longitudeDegrees, 6) + ", \"date\":\"" + gpsGetGpsJsonTimeStamp() + "\", \"ang\": " + String(GPS.angle, 6) + "}";
-  }else{
-    return "{\"valid\":false, \"lat\":"  + String(GPS.latitudeDegrees, 6) + ", \"lng\":"  + String(GPS.longitudeDegrees, 6) + ", \"date\":\"" + gpsGetGpsJsonTimeStamp() + "\", \"ang\": " + String(GPS.angle, 6) + "}";
- 
-  }
+    return "{\"valid\":true, \"lat\":\""  + String(GPS.latitudeDegrees, 6) + "\", \"lng\":\""  + String(GPS.longitudeDegrees, 6) + "\", \"date\":\"" + gpsGetGpsTimeStamp("json") + "\", \"ang\": \"" + String(GPS.angle, 6) + "\"}";
+
 }
 
 void gpsLoop(){
@@ -180,54 +177,16 @@ void gpsLoop(){
     gpsTimer = millis();  // reset the gpsTimer
    //if (  distanceInKmBetweenEarthCoordinates(last_latitude, last_longitude, (GPS.latitudeDegrees, 6), (GPS.longitudeDegrees, 6))>0.01){ // make sure that the function is working   
      if(GPS.fix && gpsFileName == ""){
-        String gpsFileName =  gpsGetGpsTimeStampFileName()  + ".json"; 
+        gpsFileName =  gpsGetGpsTimeStamp("name")  + ".json"; 
         String positionJson = gpsGetCurrentPositionJson();
-        char* jsonBuffer = 0;
-        jsonBuffer =  (char*) malloc(positionJson.length());
-        positionJson.toCharArray(jsonBuffer, sizeof(jsonBuffer));
-        writeSDFile(SD, "/" + gpsFileName, jsonBuffer);
-        free(jsonBuffer);
+        writeSDFile(SD, "/" + gpsFileName, positionJson);
+        
      }else if(GPS.fix){
         String positionJson = gpsGetCurrentPositionJson();
-        char* jsonBuffer = 0;
-        jsonBuffer =  (char*) malloc(positionJson.length());
-        positionJson.toCharArray(jsonBuffer, sizeof(jsonBuffer));
-        appendSDFile(SD, "/" + gpsFileName, jsonBuffer);
-        free(jsonBuffer);
+        appendSDFile(SD, "/" + gpsFileName, positionJson);
+
      }else{
         Serial.println("No GPS Fix!");
      }
-  
-  
-   /*
-    Serial.print("\nTime: ");
-    if (GPS.hour < 10) { Serial.print('0'); }
-    Serial.print(GPS.hour, DEC); Serial.print(':');
-    if (GPS.minute < 10) { Serial.print('0'); }
-    Serial.print(GPS.minute, DEC); Serial.print(':');
-    if (GPS.seconds < 10) { Serial.print('0'); }
-    Serial.print(GPS.seconds, DEC); Serial.print('.');
-    if (GPS.milliseconds < 10) {
-      Serial.print("00");
-    } else if (GPS.milliseconds > 9 && GPS.milliseconds < 100) {
-      Serial.print("0");
-    }
-    Serial.println(GPS.milliseconds);
-    Serial.print("Date: ");
-    Serial.print(GPS.day, DEC); Serial.print('/');
-    Serial.print(GPS.month, DEC); Serial.print("/20");
-    Serial.println(GPS.year, DEC);
-    Serial.print("Fix: "); Serial.print((int)GPS.fix);
-    Serial.print(" quality: "); Serial.println((int)GPS.fixquality);
-    if (GPS.fix) {
-      Serial.print("Location: ");
-      Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
-      Serial.print(", ");
-      Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
-      Serial.print("Speed (knots): "); Serial.println(GPS.speed);
-      Serial.print("Angle: "); Serial.println(GPS.angle);
-      Serial.print("Altitude: "); Serial.println(GPS.altitude);
-      Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
-    }*/
   } 
 }

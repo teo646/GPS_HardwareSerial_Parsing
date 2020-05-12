@@ -1,4 +1,4 @@
-#define FILESYSTEM SPIFFS
+ #define FILESYSTEM SPIFFS
 // You only need to format the filesystem once
 #define FORMAT_FILESYSTEM false
 #define useSDCard true
@@ -317,7 +317,7 @@ void readSDFile(fs::FS &fs, String path){
     file.close();
 }
 
-void writeSDFile(fs::FS &fs, String path, const char * message){
+void writeSDFile(fs::FS &fs, String path, String message){
     Serial.println("Writing file: " +  path);
     if(sdCardType == CARD_NONE){
         Serial.println("No SD card attached");
@@ -328,7 +328,7 @@ void writeSDFile(fs::FS &fs, String path, const char * message){
         Serial.println("Failed to open file for writing");
         return;
     }
-    if(file.print(message)){
+    if(file.println(message)){
         Serial.println("File written");
     } else {
         Serial.println("Write failed");
@@ -336,7 +336,7 @@ void writeSDFile(fs::FS &fs, String path, const char * message){
     file.close();
 }
 
-void appendSDFile(fs::FS &fs, String path, const char * message){
+void appendSDFile(fs::FS &fs, String path, String message){
     Serial.println("Appending to SD file: " + path);
     if(sdCardType == CARD_NONE){
         Serial.println("No SD card attached");
@@ -347,7 +347,7 @@ void appendSDFile(fs::FS &fs, String path, const char * message){
         Serial.println("Failed to open file for appending");
         return;
     }
-    if(file.print(message)){
+    if(file.println("," + message)){
         Serial.println("Message appended");
     } else {
         Serial.println("Append failed");
@@ -397,7 +397,7 @@ void setupFileSystem(){
   }
 
   if(useSDCard){
-    Serial.println("Checing for SD Card");
+    Serial.println("Checking for SD Card");
       if(SD.begin()){
         Serial.println("SD Card Adapter Found");
         sdCardType = SD.cardType();
@@ -414,8 +414,8 @@ void setupFileSystem(){
           } else {
               Serial.println("UNKNOWN");
           }
-          uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-          Serial.printf("SD Card Size: %lluMB\n", cardSize);
+        
+          Serial.printf("SD Card Size: %lluMB\n", SD.cardSize() / (1024 * 1024));
           Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
           Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
           listSDDir(SD, "/", 0);
