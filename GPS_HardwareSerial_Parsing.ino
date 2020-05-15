@@ -2,6 +2,7 @@
 #include <WebServer.h>
 #include <AutoConnect.h>
 #include <SPI.h>
+//#include <ESPmDNS.h>
 
 #include <Adafruit_GFX.h>
 #include "Adafruit_LEDBackpack.h"
@@ -9,6 +10,7 @@
 WebServer Server;
 AutoConnect portal(Server);
 AutoConnectConfig Config;
+//const char* mDnsHostName = "esp32Gps";  
 
 Adafruit_7segment matrix = Adafruit_7segment();
 
@@ -23,9 +25,6 @@ bool atDetect(IPAddress softapIP) {
   Serial.println("Captive portal started, SoftAP IP:" + softapIP.toString());
   return true;
 }
-
-
-
 
 void setup()
 {
@@ -48,17 +47,20 @@ void setup()
   portal.onDetect(atDetect);
 
   
-  if ( portal.begin() ) {
+  if ( portal.begin() ){
+    //MDNS.begin(mDnsHostName);
+  //  MDNS.setInstanceName("teo's gps tracker");
+   // MDNS.addService("_http", "_tcp", 80);
     setupFileSystem();
     gpsSetup();
-    setupHttpServer();
     gpsHttpSetup();
+    setupHttpServer();
     Serial.println("Started, IP:" + WiFi.localIP().toString());
   }else {
     Serial.println("Connection failed.");
     while (true) { yield(); }
   }
- 
+
 }
 
 

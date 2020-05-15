@@ -9,24 +9,40 @@
                 width: 100%;
             }
         </style>
-        <script type="text/javascript" src="/jquery-3.5.0.min.js"></script>
-        <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBP-sX_MQ4FVCbm2v478-vEcubrio73lS4"></script>
+        <!-- <script type="text/javascript" src="/jquery-3.5.0.min.js"></script> -->
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBP-sX_MQ4FVCbm2v478-vEcubrio73lS4"></script>
         <script>
-            var refreshRate = 10000;
+		
+			var sampleData = [
+			 {"valid":true, "lat":37.727, "lng":-96.707, "date":"2020-05-12T19:21:26.000Z", "ang": 182},
+			 {"valid":true, "lat":38.971, "lng":-92.713, "date":"2020-05-12T19:21:26.000Z", "ang": 182},
+             {"valid":true, "lat":36.172, "lng":-89.415, "date":"2020-05-12T19:21:26.000Z", "ang": 182}
+			 ];
+			
+			
+		    var refreshRate = 10000;
             var map = null;
             var marker = null;
             var infoWindow = null;
-            var position = {
-                lat: 42.091560,
-                lng: -85.584000
-            };
-            var mapCenter = {
-                lat: 42.091560,
-                lng: -85.584000
-            };
-			
-			
-			var trackPath;
+            var position = {lat: 42.091560, lng: -85.584000};
+            var mapCenter = {lat: 42.091560, lng: -85.584000};
+			var GpsCoordinates = [];
+			var trackPath = null;
+			var askedDate = null;
+			function getUrlVars()
+			{
+			    var vars = [], hash;
+			    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+			    for(var i = 0; i < hashes.length; i++)
+			    {
+			        hash = hashes[i].split('=');
+			        vars.push(hash[0]);
+			        vars[hash[0]] = hash[1];
+			    }
+			    return vars;
+			}
+			var qs = getUrlVars();
             function initMap() {
                 map = new google.maps.Map(document.getElementById('map'),{
                     zoom: 4,
@@ -35,68 +51,85 @@
 				if(infoWindow === null){
 							infoWindow = new google.maps.InfoWindow;
 			                infoWindow.setPosition(position);
-			                infoWindow.setContent('Hello! ');
+			                infoWindow.setContent('Hi! ');
 			                infoWindow.open(map);
 						}
+              
                 
-                
-				trackPath = new google.maps.Polyline({
-				    geodesic: true,
-				    strokeColor: '#FF0000',
-				    strokeOpacity: 1.0,
-				    strokeWeight: 2
-				  });
-			   trackPath.setMap(map);
-
-            };
-			function centerMapCurrentPosition() {
-			    var path = trackPath.getPath();
-                console.log("Getting Position");
-                $.ajax({
-                    url: "/getGpsData",
+            }
+			
+			function getGPSData(){
+			    var defer = $.Deferred();
+				if(qs.debug){
+					defer.resolve(sampleData);
+				}else{
+				    askedDate = document.getElementById("Date").value;
+					$.ajax({
+                    url: "/getGpsData/?Date=\"askedDate\"",
                     dataType: "json",
                     data: null
-                }).then(function(data) {
-                    if (data.valid) {
+		                }).then(function(data) {
+		                  defer.resolve(data);
+		                }, function(jqXHR, textStatus, errorThrown) {
+		                    console.log("Error Getting Position", textStatus, errorThrown);
+		                   defer.reject(jqXHR, textStatus, errorThrown); 
+		                })
+				}
+                return defer.promise();
+			}
+			
+			function centerMapCurrentPosition() {
+                GpsCoordinates = [];
+                console.log("Getting Position");
+				if(qs.debug){
 					
-					    
-                        console.log("Got Position", data);
-                        position.lat = data.lat;
-						position.lng = data.lng;
-						path.push(position);
+				}
+                getGPSData().then(function(data) {
+                  $.each( data, function(index, item){
+                        position.lat = item.lat;
+						position.lng = item.lng;
+						console.log("Got Position", position);
+						GpsCoordinates.push({lat: item.lat, lng: item.lng});
 						
-						if(marker === null){
-							marker = new google.maps.Marker({
-			                    position: position,
-			                    map: map
-			                });
-						};
-						marker.setPosition(position);
-					/*	if(infoWindow === null){
-							infoWindow = new google.maps.InfoWindow;
-			                infoWindow.setPosition(position);
-			                infoWindow.setContent('New location found.');
-			                infoWindow.open(map);
-						}
-						infoWindow.setPosition(position);*/
 						
-                    } else {
-                        console.log("No Gps Fix", data);
-                    };
+						
+			            var marker = new google.maps.Marker({
+                             position: position,
+                             title: '#' + (index + 1),
+                             map: map
+                        });
+                  });
+				  console.log("coordinates are", GpsCoordinates); 
+			      drawPolyLines()
                     //setTimeout(updateMap, refreshRate);
                 }, function(jqXHR, textStatus, errorThrown) {
-                    console.log("Error Getting Position", textStatus, errorThrown);
+                    console.log("Error Getting GPS Data", textStatus, errorThrown);
                     //setTimeout(updateMap, refreshRate);
-                });
-            }
+                })
+            };
+			function drawPolyLines() {
+		       trackPath = new google.maps.Polyline({
+                       path: GpsCoordinates,
+                       geodesic: true,
+                       strokeColor: '#FF0000',
+                       strokeOpacity: 1.0,
+                       strokeWeight: 2
+               });
+ 
+                       trackPath.setMap(map);
+			
+			}
 	    var getMenu = function(){
-		$( "div.menu" ).load( "/autoconnectMenu" );
+		 if(!qs.debug){
+			$( "div.menu" ).load( "/autoconnectMenu" );
             }
+		}
             $(document).ready(function() {
-				$(".btnCurrentPosition").on("click", centerMapCurrentPosition);
+				$(".getPosition").on("click", centerMapCurrentPosition);
 				getMenu();
                 initMap();
                 centerMapCurrentPosition();
+				
             });
         </script>
     </head>
@@ -104,9 +137,12 @@
 	
         <div style="width:100%">
 		    <div style="display:inline-block"><h3>Teo Google Maps Demo</h3></div>
-			<div style="display:inline-block"><button class="btnCurrentPosition">!</button></div>
+			<div style="display:inline-block">
+            <label for="Date">Choose The Date:</label>
+            <input type="date" id="Date" name="Date">
+            <button class="getPosition">Search!</button>
+			</div>
 			<div style="display:inline-block; float:right"><div class="menu"></div></div>
-	    </div>
 		<div style="width:100%">
 			<table style="width:100%">
 				<tr>
