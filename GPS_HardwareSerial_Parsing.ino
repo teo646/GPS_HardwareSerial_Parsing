@@ -4,15 +4,11 @@
 #include <SPI.h>
 //#include <ESPmDNS.h>
 
-#include <Adafruit_GFX.h>
-#include "Adafruit_LEDBackpack.h"
 
 WebServer Server;
 AutoConnect portal(Server);
 AutoConnectConfig Config;
 //const char* mDnsHostName = "esp32Gps";  
-
-Adafruit_7segment matrix = Adafruit_7segment();
 
 void sendRedirect(String uri) {
   WebServerClass& server = portal.host();
@@ -31,7 +27,6 @@ void setup()
    // connect at 115200 so we can read the GPS fast enough and echo without dropping chars
   // also spit it out
   Serial.begin(115200);
-  matrix.begin(0x70);
   Config.boundaryOffset = 256;
   Config.autoReconnect = true;
   Config.ota=AC_OTA_BUILTIN;
@@ -41,16 +36,21 @@ void setup()
   Config.ticker = true;
   Config.tickerPort = LED_BUILTIN;
   Config.tickerOn = LOW;
+  Config.homeUri = "/";
+  Config.immediateStart = true;
+  Config.retainPortal = true;
+  Config.portalTimeout = 0;
+  Config.bootUri = AC_ONBOOTURI_HOME;
+  Config.autoReset=false;
   //Config.autoSave = AC_SAVECREDENTIAL_NEVER;
   portal.config(Config);
-  
   portal.onDetect(atDetect);
 
   
   if ( portal.begin() ){
     //MDNS.begin(mDnsHostName);
-  //  MDNS.setInstanceName("teo's gps tracker");
-   // MDNS.addService("_http", "_tcp", 80);
+    //MDNS.setInstanceName("teo's gps tracker");
+    //MDNS.addService("_http", "_tcp", 80);
     setupFileSystem();
     gpsSetup();
     gpsHttpSetup();

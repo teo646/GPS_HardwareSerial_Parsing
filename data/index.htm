@@ -65,7 +65,7 @@
 				}else{
 				    askedDate = document.getElementById("Date").value;
 					$.ajax({
-                    url: "/getGpsData/?Date=\"askedDate\"",
+                    url: "/getGpsData?Date=" + askedDate,
                     dataType: "json",
                     data: null
 		                }).then(function(data) {
@@ -138,7 +138,7 @@
         <div style="width:100%">
 		    <div style="display:inline-block"><h3>Teo Google Maps Demo</h3></div>
 			<div style="display:inline-block">
-            <label for="Date">Choose The Date:</label>
+            <label for="Date">        Choose The Date:</label>
             <input type="date" id="Date" name="Date">
             <button class="getPosition">Search!</button>
 			</div>

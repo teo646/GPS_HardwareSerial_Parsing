@@ -16,11 +16,21 @@ Adafruit_GPS GPS(&GPSSerial);
 uint32_t gpsTimer = millis();
 float last_latitude = 0;
 float last_longitude = 0;
-String gpsFileName = "";
 
 void getGpsDataHandler(){
-  Serial.println(client.read);
-
+  //String DateRequested;
+  //Serial.println(portal.host().client().read());
+  //char c;
+   //   while(DateRequested.length() < 50) {
+        //c = char(portal.host().client().read());
+        //DateRequested += c;
+    //    DateRequested += char(portal.host().client().read());
+    //  }
+  //    if(DateRequested == ""){
+   //     Serial.println("no data");
+//}else{
+  //      Serial.println(DateRequested);
+   //     }
   File root = SD.open("/");
    if(!root){
         Serial.println("Failed to open directory");
@@ -41,14 +51,14 @@ void getGpsDataHandler(){
     while(file){
      while(file.available()){
        Data +=  char(file.read());
-}      SD.remove("/" + String(file.name()));
+     }    
+     // SD.remove("/" + String(file.name()));
        Data += ",";
        file = root.openNextFile();
 }   Data = Data.substring(1, (Data.length() - 2));
-    Serial.println("no empty space in the sd card");
+   // Serial.println("no empty space in the sd card");
     Server.send(200, "text/json", "[" + Data + "]");
     Serial.println("[" + Data + "]");
-    gpsFileName= "";
 }
 
 void gpsGetCurrentPosition(){
@@ -70,15 +80,6 @@ float distanceInKmBetweenEarthCoordinates(float lat1,float lon1,float lat2,float
   return earthRadiusKm * c;
 }
 
-void appendLineToFile(){
-  if(gpsFileName == ""){
-      Server.send(500, "application/json", "{\"error\":\"No GPS Fix Yet\"}");
-      return;
-    }
-  if(SD.exists("/" + gpsFileName)){
-    File file = SD.open("/" + gpsFileName);
-  } 
-}
 
 void gpsSetup() {
   // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
@@ -115,6 +116,9 @@ void gpsHttpSetup() {
 
 String gpsGetGpsTimeStamp(String type){
   int differenceOfHours = 0;
+  int Day;
+  int Month;
+  int Year;
   if((GPS.latitudeDegrees, 6) > 0){
     differenceOfHours = (GPS.latitudeDegrees, 6)/15;
   }else{
@@ -122,14 +126,14 @@ String gpsGetGpsTimeStamp(String type){
     }
 
   int Seconds = int(GPS.seconds);
-  int Minutes = int(GPS.minute)
-  int Hours = GPS.hour + differenceOfHours;
+  int Minutes = int(GPS.minute);
+  int Hours = int(GPS.hour) + differenceOfHours;
   if(Hours > 24){
     Hours = Hours -24;
-    int Day = int(GPS.day) + 1;
+    Day = int(GPS.day) + 1;
   }
   else{
-    int Day = int(GPS.day);
+    Day = int(GPS.day);
   }
   if((GPS.month == 2) && Day ==30){
      Day = 1;
@@ -138,7 +142,7 @@ String gpsGetGpsTimeStamp(String type){
   else if((GPS.month == 12) && Day ==32){
      Day = 1;
      Month = 1;
-     int Year = 2001 + int(GPS.year);
+     Year = 2001 + int(GPS.year);
     }
   else if(((GPS.month == 1) || (GPS.month == 3) || (GPS.month == 5) || (GPS.month == 7) || (GPS.month == 8) || (GPS.month == 10)) && Day == 32){
       Day = 1;
@@ -150,7 +154,7 @@ String gpsGetGpsTimeStamp(String type){
     }
   else{
      Month = int(GPS.month);
-     int Year = 20 + int(GPS.year);
+     Year = 20 + int(GPS.year);
   }
 
 
@@ -161,7 +165,7 @@ String gpsGetGpsTimeStamp(String type){
   }else{
     Serial.println("specify time stamp type");
     return "";
-}
+}}
 String gpsGetCurrentPositionJson(){
     return "{\"lat\":"  + String(GPS.latitudeDegrees, 6) + ", \"lng\":"  + String(GPS.longitudeDegrees, 6) + ", \"time\":\"" + gpsGetGpsTimeStamp("data") + "\", \"ang\": " + String(GPS.angle, 6) + "}";
 
