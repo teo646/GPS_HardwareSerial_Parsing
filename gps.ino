@@ -12,51 +12,43 @@ Adafruit_GPS GPS(&GPSSerial);
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
 #define GPSECHO false
-
+  float last_latitude = 0;
+  float last_longitude = 0;
 uint32_t gpsTimer = millis();
-float last_latitude = 0;
-float last_longitude = 0;
 
+/*[
+       {"valid":true, "lat":37.727, "lng":-96.707, "date":"2020-05-12T19:21:26.000Z", "ang": 182},
+       {"valid":true, "lat":38.971, "lng":-92.713, "date":"2020-05-12T19:21:26.000Z", "ang": 182},
+             {"valid":true, "lat":36.172, "lng":-89.415, "date":"2020-05-12T19:21:26.000Z", "ang": 182}
+       ];*/
 void getGpsDataHandler(){
-  //String DateRequested;
-  //Serial.println(portal.host().client().read());
-  //char c;
-   //   while(DateRequested.length() < 50) {
-        //c = char(portal.host().client().read());
-        //DateRequested += c;
-    //    DateRequested += char(portal.host().client().read());
-    //  }
-  //    if(DateRequested == ""){
-   //     Serial.println("no data");
-//}else{
-  //      Serial.println(DateRequested);
-   //     }
-  File root = SD.open("/");
-   if(!root){
-        Serial.println("Failed to open directory");
-        Server.send(500, "text/json", "{\"error\":\"No GPS Fix Yet\"}");
-        return;
-    }
-    if(!root.isDirectory()){
-        Serial.println("Not a directory");
-        Server.send(500, "text/json", "{\"error\":\"No GPS Fix Yet\"}");
-        return;
-    }
-    
+  String Date = "";
+  String Data = "";
 
-    File file = root.openNextFile();
+  if (Server.arg("Date")== ""){     //Parameter not found
+  
+  Server.send(200, "text/json", "{\"valid\":false, \"exist\":true}"  );
+  Serial.println("date is not selected");
+  return;
+  }else{     //Parameter found
+  
+  Date = Server.arg("Date");     //Gets the value of the query parameter
+  
+  }
+
     
-    Serial.println("reading data");
-    String Data;
-    while(file){
-     while(file.available()){
-       Data +=  char(file.read());
-     }    
-     // SD.remove("/" + String(file.name()));
-       Data += ",";
-       file = root.openNextFile();
-}   Data = Data.substring(1, (Data.length() - 2));
-   // Serial.println("no empty space in the sd card");
+     File file = SD.open("/" + Date + ".json");
+    if(!file){
+        Serial.println("No Data for " + Date);
+        Server.send(200, "text/json", "{\"valid\":true, \"exist\":false}");
+        return;
+    }
+
+    Serial.print("Read from file");
+    while(file.available()){
+        Data += char(file.read());
+    }
+    file.close();
     Server.send(200, "text/json", "[" + Data + "]");
     Serial.println("[" + Data + "]");
 }
@@ -90,6 +82,7 @@ void gpsSetup() {
   delay(100);
   GPS.begin(115200);
   delay(100);
+  
   // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   // uncomment this line to turn on only the "minimum recommended" data
@@ -107,6 +100,10 @@ void gpsSetup() {
   delay(1000);
   // Ask for firmware version
   GPSSerial.println(PMTK_Q_RELEASE);
+  Serial.println(last_longitude);
+  Serial.println(last_latitude);
+  Serial.println(gpsGetGpsTimeStamp("name"));
+  Serial.println(gpsGetGpsTimeStamp("data"));
 }
 
 void gpsHttpSetup() {
@@ -119,10 +116,10 @@ String gpsGetGpsTimeStamp(String type){
   int Day;
   int Month;
   int Year;
-  if((GPS.latitudeDegrees, 6) > 0){
-    differenceOfHours = (GPS.latitudeDegrees, 6)/15;
+  if(GPS.latitudeDegrees >= 0){
+    differenceOfHours = GPS.latitudeDegrees/15;
   }else{
-    differenceOfHours = (360 + (GPS.latitudeDegrees, 6))/15;
+    differenceOfHours = 24 + GPS.latitudeDegrees/15;
     }
 
   int Seconds = int(GPS.seconds);
@@ -154,24 +151,52 @@ String gpsGetGpsTimeStamp(String type){
     }
   else{
      Month = int(GPS.month);
-     Year = 20 + int(GPS.year);
+     Year = 2000 + int(GPS.year);
   }
 
+  String S_Seconds = String(Seconds);
+  String S_Minutes = String(Minutes);
+  String S_Hours = String(Hours);
+  String S_Day = String(Day);
+  String S_Month = String(Month);
+  String S_Year = String(Year);
+
+  if (S_Month.length() == 1){
+    S_Month = "0" + S_Month;      
+  }
+
+  if (S_Day.length() == 1){
+    S_Day = "0" + S_Day;      
+  }
+
+  if (S_Hours.length() == 1){
+    S_Hours = "0" + S_Hours;      
+  }
+
+  if (S_Minutes.length() == 1){
+    S_Minutes = "0" + S_Minutes;      
+  }
+
+  if (S_Seconds.length() == 1){
+    S_Seconds = "0" + S_Seconds;      
+  }
 
   if(type == "name"){
-    return String(Year) +"."+ String(Month) +"."+ String(Day) +".json"; 
+    return S_Year +"-"+ S_Month +"-"+ S_Day +".json"; 
   }else if(type == "data"){
-    return String(Hours) + "." + String(Minutes) + "." + String(Seconds); 
+    return S_Hours + ":" + S_Minutes + ":" + S_Seconds; 
   }else{
     Serial.println("specify time stamp type");
     return "";
 }}
 String gpsGetCurrentPositionJson(){
-    return "{\"lat\":"  + String(GPS.latitudeDegrees, 6) + ", \"lng\":"  + String(GPS.longitudeDegrees, 6) + ", \"time\":\"" + gpsGetGpsTimeStamp("data") + "\", \"ang\": " + String(GPS.angle, 6) + "}";
+    return "{\"valid\":true, \"exist\":true, \"lat\":"  + String(GPS.latitudeDegrees, 3) + ", \"lng\":"  + String(GPS.longitudeDegrees, 3) + ", \"time\":\"" + gpsGetGpsTimeStamp("data") + "\", \"ang\": " + String(GPS.angle, 3) + "}";
 
 }
 
 void gpsLoop(){
+
+
   // read data from the GPS in the 'main loop'
   char c = GPS.read();
   // if you want to debug, this is a good time to do it!
@@ -194,7 +219,7 @@ void gpsLoop(){
   if (millis() - gpsTimer > 10000) {
     gpsTimer = millis();  // reset the gpsTimer
     if(GPS.fix){
-  if (  distanceInKmBetweenEarthCoordinates(last_latitude, last_longitude, (GPS.latitudeDegrees, 6), (GPS.longitudeDegrees, 6))>0.01){ // make sure that the function is working   
+  if (  distanceInKmBetweenEarthCoordinates(last_latitude, last_longitude, GPS.latitudeDegrees, GPS.longitudeDegrees)>0.1){ // make sure that the function is working   
      if (exists(SD, "/" + gpsGetGpsTimeStamp("name"))){ 
         String positionJson = gpsGetCurrentPositionJson();
         appendSDFile(SD, "/" + gpsGetGpsTimeStamp("name"), positionJson);
@@ -204,8 +229,8 @@ void gpsLoop(){
         writeSDFile(SD, "/" + gpsGetGpsTimeStamp("name"), positionJson);
 
      }
-     last_latitude = (GPS.latitudeDegrees, 6);
-     last_longitude = (GPS.longitudeDegrees, 6);
+     last_latitude = GPS.latitudeDegrees;
+     last_longitude = GPS.longitudeDegrees;
   }
     }else{
         Serial.println("No GPS Fix!~");

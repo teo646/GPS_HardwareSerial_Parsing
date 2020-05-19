@@ -15,18 +15,16 @@
         <script>
 		
 			var sampleData = [
-			 {"valid":true, "lat":37.727, "lng":-96.707, "date":"2020-05-12T19:21:26.000Z", "ang": 182},
-			 {"valid":true, "lat":38.971, "lng":-92.713, "date":"2020-05-12T19:21:26.000Z", "ang": 182},
-             {"valid":true, "lat":36.172, "lng":-89.415, "date":"2020-05-12T19:21:26.000Z", "ang": 182}
+			 {"valid":true, "exist":true, "lat":37.727, "lng":-96.707, "date":"2020-05-12T19:21:26.000Z", "ang": 182},
+			 {"valid":true, "exist":true, "lat":38.971, "lng":-92.713, "date":"2020-05-12T19:21:26.000Z", "ang": 182},
+             {"valid":true, "exist":true, "lat":36.172, "lng":-89.415, "date":"2020-05-12T19:21:26.000Z", "ang": 182}
 			 ];
 			
 			
 		    var refreshRate = 10000;
             var map = null;
-            var marker = null;
-            var infoWindow = null;
-            var position = {lat: 42.091560, lng: -85.584000};
-            var mapCenter = {lat: 42.091560, lng: -85.584000};
+            var mapCenter = {lat: 39.000000, lng: -99.000000};
+			var position = {lat: 39.000000, lng: -99.000000};
 			var GpsCoordinates = [];
 			var trackPath = null;
 			var askedDate = null;
@@ -48,12 +46,7 @@
                     zoom: 4,
                     center: mapCenter
                 });
-				if(infoWindow === null){
-							infoWindow = new google.maps.InfoWindow;
-			                infoWindow.setPosition(position);
-			                infoWindow.setContent('Hi! ');
-			                infoWindow.open(map);
-						}
+
               
                 
             }
@@ -85,23 +78,28 @@
 					
 				}
                 getGPSData().then(function(data) {
-                  $.each( data, function(index, item){
-                        position.lat = item.lat;
-						position.lng = item.lng;
-						console.log("Got Position", position);
-						GpsCoordinates.push({lat: item.lat, lng: item.lng});
-						
-						
-						
-			            var marker = new google.maps.Marker({
-                             position: position,
-                             title: '#' + (index + 1),
-                             map: map
-                        });
-                  });
-				  console.log("coordinates are", GpsCoordinates); 
-			      drawPolyLines()
-                    //setTimeout(updateMap, refreshRate);
+				if(data.valid == false && data.exist == true){
+                  alert("select the day you want to track");
+               }else if(data.valid == true && data.exist == false){
+			   	 alert("data at" + askedDate + "doesn't exist");
+			   }else{
+			   	$.each( data, function(index, item){
+                    position.lat = item.lat;
+					position.lng = item.lng;
+					console.log("Got Position", position);
+					GpsCoordinates.push({lat: item.lat, lng: item.lng});
+					
+					
+					
+		            var infoWindow = new google.maps.InfoWindow({
+                         position: position,
+                         Content: item.time,
+                         map: map
+                    });
+              });
+			  console.log("coordinates are", GpsCoordinates); 
+		      drawPolyLines()
+			   } //setTimeout(updateMap, refreshRate);
                 }, function(jqXHR, textStatus, errorThrown) {
                     console.log("Error Getting GPS Data", textStatus, errorThrown);
                     //setTimeout(updateMap, refreshRate);

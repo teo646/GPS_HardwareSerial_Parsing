@@ -72,20 +72,25 @@ bool exists(fs::FS &fs, String path){
 
 bool handleFileRead(String path) {
    if (path.startsWith("/sd/")==true){
+    Serial.println("handleFileRead SD: " + path);
     return handleFileReadFS(SD, path);
    }else{
+    Serial.println("handleFileRead SPI: " + path);
     return handleFileReadFS(FILESYSTEM, path);
    }  
 }
 
 bool handleFileReadSD(String path) {
+    Serial.println("handleFileReadSD: " + path);
     return handleFileReadFS(SD, path);
+    
 }
 
 bool handleFileReadFS(fs::FS &fs, String path) {
-  Serial.println("handleFileRead: " + path);
+  
   if (path.endsWith("/")) {
     path += "index.htm";
+    Serial.println("handleFileReadFS: index.htm!");
   }
   String contentType = getContentType(path);
   String pathWithGz = path + ".gz";
@@ -418,7 +423,7 @@ void setupFileSystem(){
           Serial.printf("SD Card Size: %lluMB\n", SD.cardSize() / (1024 * 1024));
           Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
           Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
-          listSDDir(SD, "/", 0);
+          //listSDDir(SD, "/", 0);
         }
       }else{
         Serial.println("SD Card Adapter Not Found");

@@ -32,6 +32,8 @@ void setup()
   Config.ota=AC_OTA_BUILTIN;
   uint64_t chipid = ESP.getEfuseMac();
   Config.apid = "TeoGPS_" + String((uint32_t)chipid, HEX);
+  IPAddress softApIp (10,254,254,1);
+  Config.apip = softApIp;
   Config.psk = "";
   Config.ticker = true;
   Config.tickerPort = LED_BUILTIN;
@@ -44,22 +46,31 @@ void setup()
   Config.autoReset=false;
   //Config.autoSave = AC_SAVECREDENTIAL_NEVER;
   portal.config(Config);
-  portal.onDetect(atDetect);
-
+  portal.onDetect(atDetect); 
+  Serial.println("Starting File System."); 
+  setupFileSystem();
+  delay(100);
+  Serial.println("Starting Http Server.");
+  setupHttpServer();
+  delay(100);
+  Serial.println("Starting GPS.");
+  gpsSetup();
+  Serial.println("Starting GPS Http.");
+  gpsHttpSetup();
+  delay(100);
+  Serial.println("Portal Being.");
   
   if ( portal.begin() ){
     //MDNS.begin(mDnsHostName);
     //MDNS.setInstanceName("teo's gps tracker");
     //MDNS.addService("_http", "_tcp", 80);
-    setupFileSystem();
-    gpsSetup();
-    gpsHttpSetup();
-    setupHttpServer();
+    
+    
     Serial.println("Started, IP:" + WiFi.localIP().toString());
   }else {
     Serial.println("Connection failed.");
     while (true) { yield(); }
-  }
+  }  
 
 }
 

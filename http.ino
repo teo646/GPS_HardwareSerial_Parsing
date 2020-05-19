@@ -47,8 +47,9 @@ void setupHttpServer(){
   //called when the url is not defined here
   //use it to load content from FILESYSTEM
   Server.onNotFound([]() {
+    Serial.println("File Not Found See if it is on SPI");
     if (!handleFileRead(Server.uri())) {
-      Server.send(404, "text/plain", "FileNotFound");
+      Server.send(404, "text/plain", "File Not Found Andy");
     }
   });
 
