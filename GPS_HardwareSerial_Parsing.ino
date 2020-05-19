@@ -7,7 +7,7 @@
 
 WebServer Server;
 AutoConnect portal(Server);
-AutoConnectConfig Config;
+AutoConnectConfig Config("", "");
 //const char* mDnsHostName = "esp32Gps";  
 
 void sendRedirect(String uri) {
@@ -17,7 +17,7 @@ void sendRedirect(String uri) {
   server.client().stop();
 }
 
-bool atDetect(IPAddress softapIP) {
+bool atDetect(IPAddress softapIP) { 
   Serial.println("Captive portal started, SoftAP IP:" + softapIP.toString());
   return true;
 }
@@ -27,23 +27,25 @@ void setup()
    // connect at 115200 so we can read the GPS fast enough and echo without dropping chars
   // also spit it out
   Serial.begin(115200);
+  Config.autoRise = true;
   Config.boundaryOffset = 256;
-  Config.autoReconnect = true;
+  Config.autoReconnect = true; //
   Config.ota=AC_OTA_BUILTIN;
-  uint64_t chipid = ESP.getEfuseMac();
-  Config.apid = "TeoGPS_" + String((uint32_t)chipid, HEX);
-  IPAddress softApIp (10,254,254,1);
-  Config.apip = softApIp;
-  Config.psk = "";
-  Config.ticker = true;
-  Config.tickerPort = LED_BUILTIN;
-  Config.tickerOn = LOW;
+  uint64_t chipid = ESP.getEfuseMac();  //
+  Config.apid = "TeoGPS_" + String((uint32_t)chipid, HEX); // //
+  Config.apip = IPAddress(192,168,10,1);      // Sets SoftAP IP address
+  Config.gateway = IPAddress(0,0,0,0);     // Sets WLAN router IP address
+  Config.netmask = IPAddress(255,255,255,0);    // Sets WLAN scope
+  Config.psk = "12345678";  // The lenght should be from 8 to up to 63.
+  Config.ticker = true;  //
+  Config.tickerPort = LED_BUILTIN;//
+  Config.tickerOn = LOW;//
   Config.homeUri = "/";
   Config.immediateStart = true;
-  Config.retainPortal = true;
+  //Config.retainPortal = true;
   Config.portalTimeout = 0;
   Config.bootUri = AC_ONBOOTURI_HOME;
-  Config.autoReset=false;
+  Config.autoReset=false; //
   //Config.autoSave = AC_SAVECREDENTIAL_NEVER;
   portal.config(Config);
   portal.onDetect(atDetect); 
@@ -71,7 +73,7 @@ void setup()
     Serial.println("Connection failed.");
     while (true) { yield(); }
   }  
-
+  
 }
 
 

@@ -433,3 +433,8 @@ void setupFileSystem(){
   Serial.printf("\n");
  
 }
+
+void handleRoot(){
+  File file = SPIFFS.open("/index.htm", "r");
+  Server.streamFile(file, "text/html");
+}

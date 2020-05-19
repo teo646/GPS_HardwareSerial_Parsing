@@ -3,6 +3,7 @@ void handleMenuHtml(void){
 }
 
 void setupHttpServer(){
+  Server.on("/", HTTP_GET, handleRoot); 
   //SERVER INIT
   //get all GPIO statuses in one json call
   Server.on("/autoconnectMenu", HTTP_GET, handleMenuHtml);
