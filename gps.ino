@@ -100,10 +100,6 @@ void gpsSetup() {
   delay(1000);
   // Ask for firmware version
   GPSSerial.println(PMTK_Q_RELEASE);
-  Serial.println(last_longitude);
-  Serial.println(last_latitude);
-  Serial.println(gpsGetGpsTimeStamp("name"));
-  Serial.println(gpsGetGpsTimeStamp("data"));
 }
 
 void gpsHttpSetup() {
@@ -113,78 +109,52 @@ void gpsHttpSetup() {
 
 String gpsGetGpsTimeStamp(String type){
   int differenceOfHours = 0;
-  int Day;
-  int Month;
-  int Year;
+  String Day;
+  String Month = String(GPS.month);
+  String Year = "20" + String(GPS.year);
   if(GPS.latitudeDegrees >= 0){
     differenceOfHours = GPS.latitudeDegrees/15;
   }else{
     differenceOfHours = 24 + GPS.latitudeDegrees/15;
     }
 
-  int Seconds = int(GPS.seconds);
-  int Minutes = int(GPS.minute);
-  int Hours = int(GPS.hour) + differenceOfHours;
-  if(Hours > 24){
-    Hours = Hours -24;
-    Day = int(GPS.day) + 1;
+  String Seconds = String(GPS.seconds);
+  String Minutes = String(GPS.minute);
+  int Hours = int(GPS.hour) - differenceOfHours;
+  if(Hours > 0){
+    Day = String(GPS.day);
   }
   else{
-    Day = int(GPS.day);
-  }
-  if((GPS.month == 2) && Day ==30){
-     Day = 1;
-     Month = 3;
-    }
-  else if((GPS.month == 12) && Day ==32){
-     Day = 1;
-     Month = 1;
-     Year = 2001 + int(GPS.year);
-    }
-  else if(((GPS.month == 1) || (GPS.month == 3) || (GPS.month == 5) || (GPS.month == 7) || (GPS.month == 8) || (GPS.month == 10)) && Day == 32){
-      Day = 1;
-      Month = int(GPS.month) + 1;
-    }
-  else if(((GPS.month == 4) || (GPS.month == 6) || (GPS.month == 9) || (GPS.month == 11)) && Day == 31){
-      Day = 1;
-      Month = int(GPS.month) + 1;
-    }
-  else{
-     Month = int(GPS.month);
-     Year = 2000 + int(GPS.year);
+    Hours = Hours + 24;
+    Day = String(GPS.day - 1);
   }
 
-  String S_Seconds = String(Seconds);
-  String S_Minutes = String(Minutes);
   String S_Hours = String(Hours);
-  String S_Day = String(Day);
-  String S_Month = String(Month);
-  String S_Year = String(Year);
 
-  if (S_Month.length() == 1){
-    S_Month = "0" + S_Month;      
+  if (Month.length() == 1){
+    Month = "0" + Month;      
   }
 
-  if (S_Day.length() == 1){
-    S_Day = "0" + S_Day;      
+  if (Day.length() == 1){
+    Day = "0" + Day;      
   }
 
   if (S_Hours.length() == 1){
     S_Hours = "0" + S_Hours;      
   }
 
-  if (S_Minutes.length() == 1){
-    S_Minutes = "0" + S_Minutes;      
+  if (Minutes.length() == 1){
+    Minutes = "0" + Minutes;      
   }
 
-  if (S_Seconds.length() == 1){
-    S_Seconds = "0" + S_Seconds;      
+  if (Seconds.length() == 1){
+    Seconds = "0" + Seconds;      
   }
 
   if(type == "name"){
-    return S_Year +"-"+ S_Month +"-"+ S_Day +".json"; 
+    return Year +"-"+ Month +"-"+ Day +".json"; 
   }else if(type == "data"){
-    return S_Hours + ":" + S_Minutes + ":" + S_Seconds; 
+    return S_Hours + ":" + Minutes + ":" + Seconds; 
   }else{
     Serial.println("specify time stamp type");
     return "";
@@ -220,14 +190,12 @@ void gpsLoop(){
     gpsTimer = millis();  // reset the gpsTimer
     if(GPS.fix){
   if (  distanceInKmBetweenEarthCoordinates(last_latitude, last_longitude, GPS.latitudeDegrees, GPS.longitudeDegrees)>0.1){ // make sure that the function is working   
-     if (exists(SD, "/" + gpsGetGpsTimeStamp("name"))){ 
-        String positionJson = gpsGetCurrentPositionJson();
-        appendSDFile(SD, "/" + gpsGetGpsTimeStamp("name"), positionJson);
-        
-     }else{
+     if (!SD.open("/" + gpsGetGpsTimeStamp("name"))){ 
         String positionJson = gpsGetCurrentPositionJson();
         writeSDFile(SD, "/" + gpsGetGpsTimeStamp("name"), positionJson);
-
+     }else{
+       String positionJson = gpsGetCurrentPositionJson();
+       appendSDFile(SD, "/" + gpsGetGpsTimeStamp("name"), positionJson);
      }
      last_latitude = GPS.latitudeDegrees;
      last_longitude = GPS.longitudeDegrees;

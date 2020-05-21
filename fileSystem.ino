@@ -360,34 +360,6 @@ void appendSDFile(fs::FS &fs, String path, String message){
     file.close();
 }
 
-void renameSDFile(fs::FS &fs, String path1, String path2){
-    Serial.println("Renaming file " +  path1 + " to " + path2);
-    if(sdCardType == CARD_NONE){
-        Serial.println("No SD card attached");
-        return;
-    }
-    if (fs.rename(path1, path2)) {
-        Serial.println("File renamed");
-    } else {
-        Serial.println("Rename failed");
-    }
-}
-
-void deleteSDFile(fs::FS &fs, String path){
-    Serial.println("Deleting file: " + path);
-    if(sdCardType == CARD_NONE){
-        Serial.println("No SD card attached");
-        return;
-    }
-    if(fs.remove(path)){
-        Serial.println("File deleted");
-    } else {
-        Serial.println("Delete failed");
-    }
-}
-
-
-
 
 void setupFileSystem(){
   if (FORMAT_FILESYSTEM) FILESYSTEM.format();

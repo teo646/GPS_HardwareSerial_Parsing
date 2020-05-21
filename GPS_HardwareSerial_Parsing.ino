@@ -2,13 +2,13 @@
 #include <WebServer.h>
 #include <AutoConnect.h>
 #include <SPI.h>
-//#include <ESPmDNS.h>
+#include <ESPmDNS.h>
 
 
 WebServer Server;
 AutoConnect portal(Server);
 AutoConnectConfig Config("", "");
-//const char* mDnsHostName = "esp32Gps";  
+const char* mDnsHostName = "Teo";  
 
 void sendRedirect(String uri) {
   WebServerClass& server = portal.host();
@@ -41,9 +41,9 @@ void setup()
   Config.tickerPort = LED_BUILTIN;//
   Config.tickerOn = LOW;//
   Config.homeUri = "/";
-  Config.immediateStart = true;
-  //Config.retainPortal = true;
-  Config.portalTimeout = 0;
+  //Config.immediateStart = true;
+  Config.retainPortal = true;
+  Config.portalTimeout = 1000;
   Config.bootUri = AC_ONBOOTURI_HOME;
   Config.autoReset=false; //
   //Config.autoSave = AC_SAVECREDENTIAL_NEVER;
@@ -57,21 +57,18 @@ void setup()
   delay(100);
   Serial.println("Starting GPS.");
   gpsSetup();
+  delay(100);
   Serial.println("Starting GPS Http.");
   gpsHttpSetup();
   delay(100);
   Serial.println("Portal Being.");
-  
+  MDNS.begin(mDnsHostName);
+  MDNS.setInstanceName("teo's gps tracker");
+  MDNS.addService("_http", "_tcp", 80);
   if ( portal.begin() ){
-    //MDNS.begin(mDnsHostName);
-    //MDNS.setInstanceName("teo's gps tracker");
-    //MDNS.addService("_http", "_tcp", 80);
-    
-    
     Serial.println("Started, IP:" + WiFi.localIP().toString());
   }else {
     Serial.println("Connection failed.");
-    while (true) { yield(); }
   }  
   
 }

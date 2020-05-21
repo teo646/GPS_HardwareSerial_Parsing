@@ -72,7 +72,6 @@
 			}
 			
 			function centerMapCurrentPosition() {
-                GpsCoordinates = [];
                 console.log("Getting Position");
 				if(qs.debug){
 					
@@ -83,6 +82,8 @@
                }else if(data.valid == true && data.exist == false){
 			   	 alert("data at" + askedDate + "doesn't exist");
 			   }else{
+			     GpsCoordinates = [];
+				 infowindow.close();
 			   	$.each( data, function(index, item){
                     position.lat = item.lat;
 					position.lng = item.lng;
@@ -98,7 +99,7 @@
                     });
               });
 			  console.log("coordinates are", GpsCoordinates); 
-		      drawPolyLines()
+		      drawPolyLines();
 			   } //setTimeout(updateMap, refreshRate);
                 }, function(jqXHR, textStatus, errorThrown) {
                     console.log("Error Getting GPS Data", textStatus, errorThrown);
