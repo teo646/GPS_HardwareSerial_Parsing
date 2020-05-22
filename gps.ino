@@ -199,6 +199,8 @@ void gpsLoop(){
      }
      last_latitude = GPS.latitudeDegrees;
      last_longitude = GPS.longitudeDegrees;
+  }else{
+    Serial.println("didn't move alot");
   }
     }else{
         Serial.println("No GPS Fix!~");

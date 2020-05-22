@@ -26,8 +26,16 @@
             var mapCenter = {lat: 39.000000, lng: -99.000000};
 			var position = {lat: 39.000000, lng: -99.000000};
 			var GpsCoordinates = [];
+			var GpsCoordinates0 = [];
 			var trackPath = null;
 			var askedDate = null;
+			var infoWindow = null;
+			function setMapOnAll(map) {
+		          for (var i = 0; i < GpsCoordinates0.length; i++) {
+		          GpsCoordinates0[i].setMap(map);
+		        }
+		      }
+
 			function getUrlVars()
 			{
 			    var vars = [], hash;
@@ -47,7 +55,12 @@
                     center: mapCenter
                 });
 
-              
+              trackPath = new google.maps.Polyline({
+                       geodesic: true,
+                       strokeColor: '#FF0000',
+                       strokeOpacity: 1.0,
+                       strokeWeight: 2
+               });
                 
             }
 			
@@ -82,8 +95,11 @@
                }else if(data.valid == true && data.exist == false){
 			   	 alert("data at" + askedDate + "doesn't exist");
 			   }else{
-			     GpsCoordinates = [];
-				 infowindow.close();
+		
+				 setMapOnAll(null);
+				 GpsCoordinates0 = [];
+				 trackPath.setMap(null);
+				 GpsCoordinates = [];
 			   	$.each( data, function(index, item){
                     position.lat = item.lat;
 					position.lng = item.lng;
@@ -92,21 +108,24 @@
 					
 					
 					
-		            var infoWindow = new google.maps.InfoWindow({
+		            infoWindow = new google.maps.InfoWindow({
                          position: position,
                          Content: item.time,
-                         map: map
+						 map: map
                     });
+					GpsCoordinates0.push(infoWindow);
               });
 			  console.log("coordinates are", GpsCoordinates); 
-		      drawPolyLines();
+		      //drawPolyLines();
+			  trackPath.setPath(GpsCoordinates);
+			  trackPath.setMap(map);
 			   } //setTimeout(updateMap, refreshRate);
                 }, function(jqXHR, textStatus, errorThrown) {
                     console.log("Error Getting GPS Data", textStatus, errorThrown);
                     //setTimeout(updateMap, refreshRate);
                 })
             };
-			function drawPolyLines() {
+			/*function drawPolyLines() {
 		       trackPath = new google.maps.Polyline({
                        path: GpsCoordinates,
                        geodesic: true,
@@ -114,10 +133,9 @@
                        strokeOpacity: 1.0,
                        strokeWeight: 2
                });
- 
-                       trackPath.setMap(map);
+               trackPath.setMap(map);
 			
-			}
+			}*/
 	    var getMenu = function(){
 		 if(!qs.debug){
 			$( "div.menu" ).load( "/autoconnectMenu" );
