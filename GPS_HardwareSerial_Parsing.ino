@@ -28,7 +28,7 @@ void setup()
   // also spit it out
   Serial.begin(115200);
   Config.boundaryOffset = 256;
-  Config.autoReconnect = true; 
+  //Config.autoReconnect = true; 
   Config.ota=AC_OTA_BUILTIN;
   uint64_t chipid = ESP.getEfuseMac();  
   Config.apid = "TeoGPS_" + String((uint32_t)chipid, HEX);
@@ -40,14 +40,15 @@ void setup()
   Config.tickerPort = LED_BUILTIN;
   Config.tickerOn = LOW;
   Config.homeUri = "/";
-  Config.immediateStart = true;
+  
+  //Config.immediateStart = true;
   Config.retainPortal = true;
   Config.portalTimeout = 1000;
   Config.bootUri = AC_ONBOOTURI_HOME;
   Config.autoReset=true;
   //Config. menuItems = AC_MENUITEM_CONFIGNEW | AC_MENUITEM_OPENSSIDS | AC_MENUITEM_DISCONNECT | AC_MENUITEM_RESET | AC_MENUITEM_UPDATE | AC_MENUITEM_HOME;
   //Config.autoSave = AC_SAVECREDENTIAL_NEVER;
-  //portal.config(Config);
+  portal.config(Config);
   portal.onDetect(atDetect); 
   Serial.println("Starting File System."); 
   setupFileSystem();
@@ -62,7 +63,9 @@ void setup()
   gpsHttpSetup();
   delay(100);
   Serial.println("Portal Being.");
-  MDNS.begin(mDnsHostName);
+  if(!MDNS.begin(mDnsHostName)) {
+     Serial.println("Error starting mDNS");
+}
   MDNS.setInstanceName("teo's gps tracker");
   MDNS.addService("_http", "_tcp", 80);
   if ( portal.begin() ){
@@ -78,10 +81,11 @@ void setup()
 void loop() // run over and over again
 {
   portal.handleClient();
+  portal.handleRequest();
   gpsLoop();
     if (WiFi.status() == WL_IDLE_STATUS) {
   Serial.println("Wifi is Idle Reseting...");
   ESP.restart();
-  delay(100);
+  delay(1000);
   } 
 }
